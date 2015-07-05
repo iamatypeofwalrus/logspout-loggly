@@ -32,6 +32,8 @@ func NewLogglyAdapter(route *router.Route) (router.LogAdapter, error) {
 		return nil, errors.New("")
 	}
 
+	log.Println("Creating Loggly Adapter")
+
 	return &Adapter{
 		token:  token,
 		client: http.Client{},
@@ -48,6 +50,7 @@ type Adapter struct {
 // Stream satisfies the router.LogAdapter interface and passes all logs to Loggly
 func (l *Adapter) Stream(logstream chan *router.Message) {
 	for m := range logstream {
+		log.Println("Received message from stream")
 		msg := logglyMessage{
 			Message:           m.Data,
 			ContainerName:     m.Container.Name,
@@ -69,6 +72,7 @@ func (l *Adapter) Stream(logstream chan *router.Message) {
 			log.Fatal(err.Error())
 		}
 
+		log.Println("Sending request to loggly")
 		_, err = l.client.Do(req)
 
 		if err != nil {

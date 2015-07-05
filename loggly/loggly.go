@@ -28,6 +28,7 @@ func NewLogglyAdapter(route *router.Route) (router.LogAdapter, error) {
 	token := os.Getenv(logglyTokenEnvVar)
 
 	if token == "" {
+		log.Fatal("Could not find environment variable LOGGLY_TOKEN")
 		return nil, errors.New("")
 	}
 

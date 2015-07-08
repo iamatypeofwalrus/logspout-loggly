@@ -85,12 +85,14 @@ func (l *Adapter) Stream(logstream chan *router.Message) {
 		}
 
 		fmt.Println("Sending request to loggly")
-		_, err = l.client.Do(req)
+		resp, err := l.client.Do(req)
 
 		if err != nil {
 			errMsg := fmt.Sprintf("Error from client: %s", err.Error())
 			fmt.Println(errMsg)
 		}
+
+		fmt.Println(resp.Status)
 	}
 }
 

@@ -19,8 +19,9 @@ const (
 	logglyEventEndpoint = "/inputs"
 )
 
+// TODO: consider logging all fatals to loggly
+
 func init() {
-	fmt.Println("Registering loggly adapter")
 	router.AdapterFactories.Register(NewLogglyAdapter, adapterName)
 
 	r := &router.Route{
@@ -36,15 +37,11 @@ func init() {
 // NewLogglyAdapter returns an Adapter with that uses a loggly token taken from
 // the LOGGLY_TOKEN environment variable
 func NewLogglyAdapter(route *router.Route) (router.LogAdapter, error) {
-	fmt.Println("Creating Adapter")
 	token := os.Getenv(logglyTokenEnvVar)
 
 	if token == "" {
-		fmt.Println("Could not find environment variable LOGGLY_TOKEN")
-		return nil, errors.New("")
+		return nil, errors.New("Could not find environment variable LOGGLY_TOKEN")
 	}
-
-	log.Println("Creating Loggly Adapter")
 
 	return &Adapter{
 		token:  token,
@@ -62,7 +59,6 @@ type Adapter struct {
 // Stream satisfies the router.LogAdapter interface and passes all logs to Loggly
 func (l *Adapter) Stream(logstream chan *router.Message) {
 	for m := range logstream {
-		fmt.Println("Received message from stream")
 		msg := logglyMessage{
 			Message:           m.Data,
 			ContainerName:     m.Container.Name,
@@ -71,29 +67,43 @@ func (l *Adapter) Stream(logstream chan *router.Message) {
 			ContainerHostname: m.Container.Config.Hostname,
 		}
 
-		js, err := json.Marshal(msg)
+		err := l.SendMessage(msg)
 
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Println(err.Error())
 		}
-
-		url := fmt.Sprintf("%s%s", logglyAddr, logglyEventEndpoint)
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(js))
-
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		fmt.Println("Sending request to loggly")
-		resp, err := l.client.Do(req)
-
-		if err != nil {
-			errMsg := fmt.Sprintf("Error from client: %s", err.Error())
-			fmt.Println(errMsg)
-		}
-
-		fmt.Println(resp.Status)
 	}
+}
+
+// SendMessage handles creating and sending a request to Loggly. Any errors that occur during that
+// process are bubbled up to the calling function
+func (l *Adapter) SendMessage(msg logglyMessage) error {
+	js, err := json.Marshal(msg)
+
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(js))
+
+	if err != nil {
+		return err
+	}
+
+	resp, err := l.client.Do(req)
+
+	if err != nil {
+		errMsg := fmt.Sprintf("Error from client: %s", err.Error())
+		return errors.New(errMsg)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		errMsg := fmt.Sprintf("Received a non 200 status code: %s", err.Error())
+		return errors.New(errMsg)
+	}
+
+	return nil
 }
 
 type logglyMessage struct {

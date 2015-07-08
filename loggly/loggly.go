@@ -28,6 +28,8 @@ func init() {
 		Adapter: "loggly",
 	}
 
+	// It's not documented in the logspout repo but if you want to use an adapter without
+	// going through the routesapi you must add at #init or via #New...
 	err := router.Routes.Add(r)
 	if err != nil {
 		log.Fatal("Could not add route: ", err.Error())
@@ -50,13 +52,13 @@ func NewLogglyAdapter(route *router.Route) (router.LogAdapter, error) {
 }
 
 // Adapter satisfies the router.LogAdapter interface by providing Stream which
-// passes all messages on to loggly.
+// passes all messages to loggly.
 type Adapter struct {
 	token  string
 	client http.Client
 }
 
-// Stream satisfies the router.LogAdapter interface and passes all logs to Loggly
+// Stream satisfies the router.LogAdapter interface and passes all messages to Loggly
 func (l *Adapter) Stream(logstream chan *router.Message) {
 	for m := range logstream {
 		msg := logglyMessage{
@@ -76,7 +78,7 @@ func (l *Adapter) Stream(logstream chan *router.Message) {
 }
 
 // SendMessage handles creating and sending a request to Loggly. Any errors that occur during that
-// process are bubbled up to the calling function
+// process are bubbled up to the caller
 func (l *Adapter) SendMessage(msg logglyMessage) error {
 	js, err := json.Marshal(msg)
 
@@ -91,6 +93,7 @@ func (l *Adapter) SendMessage(msg logglyMessage) error {
 		return err
 	}
 
+	// TODO: possibly use pool of workers to send requests?
 	resp, err := l.client.Do(req)
 
 	if err != nil {

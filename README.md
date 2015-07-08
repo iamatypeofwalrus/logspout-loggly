@@ -1,7 +1,7 @@
 # logspout-loggly
-Logspout container for Docker and Loggly
+Logspout container for Docker and Loggly.
 
-[This repo follows the suggested pattern from logspout](https://github.com/gliderlabs/logspout/tree/master/custom)
+[This repo follows the this suggested pattern from logspout](https://github.com/gliderlabs/logspout/tree/master/custom)
 
 ## How to use
 
@@ -9,6 +9,6 @@ Logspout container for Docker and Loggly
 docker --run 'logspout-loggly'\
   -d \
   -e 'LOGGLY_TOKEN=<token>' \
-  iamatypeofwalrus/logspout-loggly \
-  --volume /var/run/docker.sock:/tmp/docker.sock
+  --volume /var/run/docker.sock:/tmp/docker.sock \
+  iamatypeofwalrus/logspout-loggly
 ```

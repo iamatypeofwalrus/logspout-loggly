@@ -3,7 +3,11 @@ Logspout container for Docker and Loggly.
 
 [This repo follows this suggested pattern from logspout](https://github.com/gliderlabs/logspout/tree/master/custom)
 
-You can build the image yourself or you can pull a prebuilt image
+You can build the image yourself
+
+```docker build -t logspout-loggly ./```
+
+or you can pull a prebuilt image
 
 ```docker pull iamatypeofwalrus/logspout-loggly```
 

@@ -87,7 +87,7 @@ func (l *Adapter) SendMessage(msg logglyMessage) error {
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token)
+	url := fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token, os.Getenv(logglyTagsEnvVar))
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(js))
 
 	req.Header.Add("X-LOGGLY-TAG", os.Getenv(logglyTagsEnvVar))

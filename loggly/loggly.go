@@ -15,7 +15,7 @@ import (
 const (
 	adapterName         = "loggly"
 	logglyTokenEnvVar   = "LOGGLY_TOKEN"
-	logglyTagsEnvVar		= "LOGGLY_TAGS"
+	logglyTagsEnvVar    = "LOGGLY_TAGS"
 	logglyAddr          = "https://logs-01.loggly.com"
 	logglyEventEndpoint = "/inputs"
 )

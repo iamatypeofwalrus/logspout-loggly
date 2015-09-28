@@ -87,10 +87,12 @@ func (l *Adapter) SendMessage(msg logglyMessage) error {
 		return err
 	}
 
+  os.Stdout.Write(logglyTagsEnvVar)
 	url := fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token, "tag", os.Getenv(logglyTagsEnvVar))
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(js))
 
 	req.Header.Add("X-LOGGLY-TAG", os.Getenv(logglyTagsEnvVar))
+	os.Stdout.Write(req.Header)
 
 	if err != nil {
 		return err

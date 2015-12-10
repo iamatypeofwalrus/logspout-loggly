@@ -17,6 +17,7 @@ or you can pull a prebuilt image
 docker --run 'logspout-loggly'\
   -d \
   -e 'LOGGLY_TOKEN=<token>' \
+  -e 'LOGGLY_TAGS=<comma-delimited-list>' \
   --volume /var/run/docker.sock:/tmp/docker.sock \
   iamatypeofwalrus/logspout-loggly
 ```

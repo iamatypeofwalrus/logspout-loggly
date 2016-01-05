@@ -94,25 +94,29 @@ func (l *Adapter) SendMessage(msg logglyMessage) error {
 	url := fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(js))
 
-	if l.tags != "" {
-		req.Header.Add(logglyTagsHeader, l.tags)
-	}
-
 	if err != nil {
 		return err
+	}
+
+	if l.tags != "" {
+		req.Header.Add(logglyTagsHeader, l.tags)
 	}
 
 	// TODO: possibly use pool of workers to send requests?
 	resp, err := l.client.Do(req)
 
 	if err != nil {
-		errMsg := fmt.Sprintf("Error from client: %s", err.Error())
-		return errors.New(errMsg)
+		return fmt.Errorf(
+			"error from client: %s",
+			err.Error(),
+		)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		errMsg := fmt.Sprintf("Received a non 200 status code: %s", err.Error())
-		return errors.New(errMsg)
+		return fmt.Errorf(
+			"received a non 200 status code when sending message to loggly: %s",
+			err.Error(),
+		)
 	}
 
 	return nil

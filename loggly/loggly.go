@@ -16,6 +16,7 @@ const (
 	adapterName         = "loggly"
 	logglyTokenEnvVar   = "LOGGLY_TOKEN"
 	logglyTagsEnvVar    = "LOGGLY_TAGS"
+	logglyTagsHeader    = "X-LOGGLY-TAG"
 	logglyAddr          = "https://logs-01.loggly.com"
 	logglyEventEndpoint = "/inputs"
 )
@@ -49,6 +50,7 @@ func NewLogglyAdapter(route *router.Route) (router.LogAdapter, error) {
 	return &Adapter{
 		token:  token,
 		client: http.Client{},
+		tags:   os.Getenv(logglyTagsEnvVar),
 	}, nil
 }
 
@@ -90,7 +92,9 @@ func (l *Adapter) SendMessage(msg logglyMessage) error {
 	url := fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(js))
 
-	req.Header.Add("X-LOGGLY-TAG", os.Getenv(logglyTagsEnvVar))
+	if l.tags != "" {
+		req.Header.Add(logglyTagsHeader, l.tags)
+	}
 
 	if err != nil {
 		return err

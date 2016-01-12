@@ -5,7 +5,11 @@ Logspout container for Docker and Loggly.
 
 You can build the image yourself
 
-```docker build -t logspout-loggly ./```
+```docker build -t your-user-name/logspout-loggly ./```
+
+and optionally push it to your own hub.docker.com repo
+
+```docker push your-user-name/logspout-loggly```
 
 or you can pull a prebuilt image
 

@@ -7,7 +7,7 @@ You can build the image yourself
 
 ```docker build -t your-user-name/logspout-loggly ./```
 
-and optionally push it to your own hub.docker.com repo
+and, optionally, push it to your own hub.docker.com repo
 
 ```docker push your-user-name/logspout-loggly```
 

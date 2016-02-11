@@ -104,6 +104,7 @@ func (l *Adapter) SendMessage(msg logglyMessage) error {
 
 	// TODO: possibly use pool of workers to send requests?
 	resp, err := l.client.Do(req)
+	defer resp.Body.Close()
 
 	if err != nil {
 		return fmt.Errorf(

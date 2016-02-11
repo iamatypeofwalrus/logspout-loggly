@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gliderlabs/logspout/router"
 )
@@ -21,8 +22,6 @@ const (
 	logglyEventEndpoint = "/inputs"
 )
 
-// TODO: consider logging all fatals to loggly
-
 func init() {
 	router.AdapterFactories.Register(NewLogglyAdapter, adapterName)
 
@@ -34,7 +33,7 @@ func init() {
 	// without going through the routesapi you must add at #init or via #New...
 	err := router.Routes.Add(r)
 	if err != nil {
-		log.Fatal("Could not add route: ", err.Error())
+		log.Fatal("could not add route: ", err.Error())
 	}
 }
 
@@ -44,13 +43,16 @@ func NewLogglyAdapter(route *router.Route) (router.LogAdapter, error) {
 	token := os.Getenv(logglyTokenEnvVar)
 
 	if token == "" {
-		return nil, errors.New("Could not find environment variable LOGGLY_TOKEN")
+		return nil, errors.New("could not find environment variable LOGGLY_TOKEN")
 	}
 
 	return &Adapter{
-		token:  token,
-		client: http.Client{},
-		tags:   os.Getenv(logglyTagsEnvVar),
+		token: token,
+		client: http.Client{
+			Timeout: 900 * time.Millisecond, // logspout will cull any spout that does  respond within 1 second
+		},
+		tags: os.Getenv(logglyTagsEnvVar),
+		log:  log.New(os.Stdout, "logspout-loggly", log.LstdFlags),
 	}, nil
 }
 
@@ -60,6 +62,7 @@ type Adapter struct {
 	token  string
 	client http.Client
 	tags   string
+	log    *log.Logger
 }
 
 // Stream satisfies the router.LogAdapter interface and passes all messages to
@@ -74,53 +77,56 @@ func (l *Adapter) Stream(logstream chan *router.Message) {
 			ContainerHostname: m.Container.Config.Hostname,
 		}
 
-		err := l.SendMessage(msg)
-
-		if err != nil {
-			log.Println(err.Error())
-		}
+		l.SendMessage(msg)
 	}
 }
 
 // SendMessage handles creating and sending a request to Loggly. Any errors
 // that occur during that process are bubbled up to the caller
-func (l *Adapter) SendMessage(msg logglyMessage) error {
+func (l *Adapter) SendMessage(msg logglyMessage) {
 	js, err := json.Marshal(msg)
 
 	if err != nil {
-		return err
+		log.Println(err)
+		return
 	}
 
 	url := fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(js))
 
 	if err != nil {
-		return err
+		l.log.Println(err)
+		return
 	}
 
 	if l.tags != "" {
 		req.Header.Add(logglyTagsHeader, l.tags)
 	}
 
-	// TODO: possibly use pool of workers to send requests?
+	go l.sendRequestToLoggly(req)
+}
+
+func (l *Adapter) sendRequestToLoggly(req *http.Request) {
 	resp, err := l.client.Do(req)
 	defer resp.Body.Close()
 
 	if err != nil {
-		return fmt.Errorf(
-			"error from client: %s",
-			err.Error(),
+		l.log.Println(
+			fmt.Errorf(
+				"error from client: %s",
+				err.Error(),
+			),
 		)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf(
-			"received a non 200 status code when sending message to loggly: %s",
-			err.Error(),
+		l.log.Println(
+			fmt.Errorf(
+				"received a non 200 status code when sending message to loggly: %s",
+				err.Error(),
+			),
 		)
 	}
-
-	return nil
 }
 
 type logglyMessage struct {

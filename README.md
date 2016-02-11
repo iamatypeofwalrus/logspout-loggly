@@ -18,8 +18,7 @@ or you can pull a prebuilt image
 ## How to run
 
 ```sh
-docker --run 'logspout-loggly'\
-  -d \
+docker run -d \
   -e 'LOGGLY_TOKEN=<token>' \
   -e 'LOGGLY_TAGS=<comma-delimited-list>' \
   --volume /var/run/docker.sock:/tmp/docker.sock \

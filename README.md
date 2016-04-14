@@ -21,6 +21,7 @@ or you can pull a prebuilt image
 docker run -d \
   -e 'LOGGLY_TOKEN=<token>' \
   -e 'LOGGLY_TAGS=<comma-delimited-list>' \
+  -e 'FILTER_NAME=<wildcard-container-name>' \
   --volume /var/run/docker.sock:/tmp/docker.sock \
   iamatypeofwalrus/logspout-loggly
 ```

@@ -7,5 +7,5 @@ import (
 	_ "github.com/gliderlabs/logspout/routesapi"
 	_ "github.com/gliderlabs/logspout/transports/tcp"
 	_ "github.com/gliderlabs/logspout/transports/udp"
-	_ "github.com/uaudio/logspout-loggly/loggly"
+	_ "github.com/iamatypeofwalrus/logspout-loggly/loggly"
 )

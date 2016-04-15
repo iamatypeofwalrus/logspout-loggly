@@ -17,6 +17,7 @@ const (
 	adapterName         = "loggly"
 	logglyTokenEnvVar   = "LOGGLY_TOKEN"
 	logglyTagsEnvVar    = "LOGGLY_TAGS"
+	filterNameEnvVar    = "FILTER_NAME"
 	logglyTagsHeader    = "X-LOGGLY-TAG"
 	logglyAddr          = "https://logs-01.loggly.com"
 	logglyEventEndpoint = "/inputs"
@@ -27,6 +28,7 @@ func init() {
 
 	r := &router.Route{
 		Adapter: "loggly",
+		FilterName: os.Getenv(filterNameEnvVar),
 	}
 
 	// It's not documented in the logspout repo but if you want to use an adapter
@@ -118,7 +120,7 @@ func (l *Adapter) sendRequestToLoggly(req *http.Request) {
 		)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {

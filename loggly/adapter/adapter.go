@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/gliderlabs/logspout/router"
@@ -28,7 +27,6 @@ type Adapter struct {
 	tags       string
 	log        *log.Logger
 	queue      chan logglyMessage
-	m          sync.Mutex
 	bufferSize int
 }
 
@@ -113,8 +111,6 @@ func (l *Adapter) flushBuffer(buffer []logglyMessage) {
 }
 
 func (l *Adapter) sendRequestToLoggly(req *http.Request) {
-	l.m.Lock()
-	defer l.m.Unlock()
 	resp, err := l.client.Do(req)
 	defer resp.Body.Close()
 

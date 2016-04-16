@@ -29,11 +29,12 @@ type Adapter struct {
 	bufferSize int
 }
 
-// New returns an Adapter that receives messages from logspout and launches
-// a goroutine to buffer and flush messages to loggly.
+// New returns an Adapter that receives messages from logspout. Additionally,
+// it launches a goroutine to buffer and flush messages to loggly.
 func New(logglyToken, tags string, bufferSize int) *Adapter {
 	client := &http.Client{
-		Timeout: 900 * time.Millisecond, // logspout will cull any spout that does  respond within 1 second
+		// logspout will cull any spout that does  respond within 1 second
+		Timeout: 900 * time.Millisecond,
 	}
 
 	adapter := &Adapter{
@@ -82,36 +83,26 @@ func (l *Adapter) newBuffer() []logglyMessage {
 }
 
 func (l *Adapter) flushBuffer(buffer []logglyMessage) {
+	var data bytes.Buffer
 
-}
-
-// SendMessage handles creating and sending a request to Loggly. Any errors
-// that occur during that process are bubbled up to the caller
-func (l *Adapter) SendMessage(msg logglyMessage) {
-	js, err := json.Marshal(msg)
-
-	if err != nil {
-		log.Println(err)
-		return
+	for _, msg := range buffer {
+		j, _ := json.Marshal(msg)
+		data.Write(j)
+		data.WriteString("\n")
 	}
 
-	url := fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(js))
+	req, _ := http.NewRequest(
+		"POST",
+		fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token),
+		&data,
+	)
 
-	if err != nil {
-		l.log.Println(err)
-		return
-	}
-
-	if l.tags != "" {
-		req.Header.Add(logglyTagsHeader, l.tags)
-	}
-
-	go l.sendRequestToLoggly(req)
+	l.sendRequestToLoggly(req)
 }
 
 func (l *Adapter) sendRequestToLoggly(req *http.Request) {
 	resp, err := l.client.Do(req)
+	defer resp.Body.Close()
 
 	if err != nil {
 		l.log.Println(
@@ -122,8 +113,6 @@ func (l *Adapter) sendRequestToLoggly(req *http.Request) {
 		)
 		return
 	}
-
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		l.log.Println(

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gliderlabs/logspout/router"
@@ -26,19 +27,16 @@ type Adapter struct {
 	tags       string
 	log        *log.Logger
 	queue      chan logglyMessage
+	m          sync.Mutex
 	bufferSize int
 }
 
 // New returns an Adapter that receives messages from logspout. Additionally,
 // it launches a goroutine to buffer and flush messages to loggly.
 func New(logglyToken, tags string, bufferSize int) *Adapter {
-	client := &http.Client{
-		// logspout will cull any spout that does  respond within 1 second
-		Timeout: 900 * time.Millisecond,
-	}
 
 	adapter := &Adapter{
-		client:     client,
+		client:     http.DefaultClient,
 		bufferSize: bufferSize,
 		log:        log.New(os.Stdout, "logspout-loggly", log.LstdFlags),
 		queue:      make(chan logglyMessage),
@@ -97,10 +95,12 @@ func (l *Adapter) flushBuffer(buffer []logglyMessage) {
 		&data,
 	)
 
-	l.sendRequestToLoggly(req)
+	go l.sendRequestToLoggly(req)
 }
 
 func (l *Adapter) sendRequestToLoggly(req *http.Request) {
+	l.m.Lock()
+	defer l.m.Unlock()
 	resp, err := l.client.Do(req)
 	defer resp.Body.Close()
 

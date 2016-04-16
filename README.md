@@ -28,7 +28,3 @@ docker run -d \
 
 ## How it works
 Instead of linking containers together or bothering with [syslog or remote syslog](https://www.loggly.com/blog/centralize-logs-docker-containers) this container follows the [12 Factor app logging philosophy](http://12factor.net/logs). If your docker container(s) log(s) to STDOUT this image will pick up that stream from the docker daemon send those events to Loggly.
-
-## TODO
-- [ ] add pool of workers to send requests to Loggly in case of noisy, high event containers
-- [ ] Support router.Routes filters via environment variables

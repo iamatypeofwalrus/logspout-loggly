@@ -66,13 +66,24 @@ func (l *Adapter) Stream(logstream chan *router.Message) {
 func (l *Adapter) readQueue() {
 	buffer := l.newBuffer()
 
-	for msg := range l.queue {
-		if len(buffer) == cap(buffer) {
-			l.flushBuffer(buffer)
-			buffer = l.newBuffer()
-		}
+	periodicFlush := time.NewTicker(time.Second * 10)
 
-		buffer = append(buffer, msg)
+	for {
+		select {
+		case msg := <-l.queue:
+			if len(buffer) == cap(buffer) {
+				l.flushBuffer(buffer)
+				buffer = l.newBuffer()
+			}
+
+			buffer = append(buffer, msg)
+
+		case <-periodicFlush.C:
+			if len(buffer) > 0 {
+				l.flushBuffer(buffer)
+				buffer = l.newBuffer()
+			}
+		}
 	}
 }
 

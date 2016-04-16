@@ -17,6 +17,7 @@ const (
 	logglyAddr          = "https://logs-01.loggly.com"
 	logglyEventEndpoint = "/bulk"
 	logglyTagsHeader    = "X-LOGGLY-TAG"
+	flushTimeout        = 10 * time.Second
 )
 
 // Adapter satisfies the router.LogAdapter interface by providing Stream which
@@ -66,19 +67,21 @@ func (l *Adapter) Stream(logstream chan *router.Message) {
 func (l *Adapter) readQueue() {
 	buffer := l.newBuffer()
 
-	periodicFlush := time.NewTicker(time.Second * 10)
+	timeout := time.NewTimer(flushTimeout)
 
 	for {
 		select {
 		case msg := <-l.queue:
 			if len(buffer) == cap(buffer) {
+				timeout.Stop()
 				l.flushBuffer(buffer)
 				buffer = l.newBuffer()
+				timeout.Reset(flushTimeout)
 			}
 
 			buffer = append(buffer, msg)
 
-		case <-periodicFlush.C:
+		case <-timeout.C:
 			if len(buffer) > 0 {
 				l.flushBuffer(buffer)
 				buffer = l.newBuffer()

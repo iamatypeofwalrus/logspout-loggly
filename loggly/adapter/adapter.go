@@ -74,7 +74,6 @@ func (l *Adapter) readQueue() {
 				timeout.Stop()
 				l.flushBuffer(buffer)
 				buffer = l.newBuffer()
-				timeout.Reset(flushTimeout)
 			}
 
 			buffer = append(buffer, msg)
@@ -85,6 +84,8 @@ func (l *Adapter) readQueue() {
 				buffer = l.newBuffer()
 			}
 		}
+
+		timeout.Reset(flushTimeout)
 	}
 }
 

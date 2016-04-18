@@ -15,32 +15,26 @@ import (
 const (
 	logglyAddr          = "https://logs-01.loggly.com"
 	logglyEventEndpoint = "/bulk"
-	logglyTagsHeader    = "X-LOGGLY-TAG"
 	flushTimeout        = 10 * time.Second
 )
 
 // Adapter satisfies the router.LogAdapter interface by providing Stream which
 // passes all messages to loggly.
 type Adapter struct {
-	token      string
-	client     *http.Client
-	tags       string
-	log        *log.Logger
-	queue      chan logglyMessage
 	bufferSize int
+	log        *log.Logger
+	logglyURL  string
+	queue      chan logglyMessage
 }
 
 // New returns an Adapter that receives messages from logspout. Additionally,
 // it launches a goroutine to buffer and flush messages to loggly.
-func New(logglyToken, tags string, bufferSize int) *Adapter {
-
+func New(logglyToken string, tags string, bufferSize int) *Adapter {
 	adapter := &Adapter{
-		client:     http.DefaultClient,
 		bufferSize: bufferSize,
 		log:        log.New(os.Stdout, "logspout-loggly", log.LstdFlags),
+		logglyURL:  buildLogglyURL(logglyToken, tags),
 		queue:      make(chan logglyMessage),
-		token:      logglyToken,
-		tags:       tags,
 	}
 
 	go adapter.readQueue()
@@ -104,7 +98,7 @@ func (l *Adapter) flushBuffer(buffer []logglyMessage) {
 
 	req, _ := http.NewRequest(
 		"POST",
-		fmt.Sprintf("%s%s/%s", logglyAddr, logglyEventEndpoint, l.token),
+		l.logglyURL,
 		&data,
 	)
 
@@ -112,7 +106,7 @@ func (l *Adapter) flushBuffer(buffer []logglyMessage) {
 }
 
 func (l *Adapter) sendRequestToLoggly(req *http.Request) {
-	resp, err := l.client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	defer resp.Body.Close()
 
 	if err != nil {
@@ -128,9 +122,29 @@ func (l *Adapter) sendRequestToLoggly(req *http.Request) {
 	if resp.StatusCode != http.StatusOK {
 		l.log.Println(
 			fmt.Errorf(
-				"received a non 200 status code when sending message to loggly: %s",
-				err.Error(),
+				"received a %s status code when sending message. response: %s",
+				resp.StatusCode,
+				resp.Body,
 			),
 		)
 	}
+}
+
+func buildLogglyURL(token, tags string) string {
+	var url string
+	url = fmt.Sprintf(
+		"%s%s/%s",
+		logglyAddr,
+		logglyEventEndpoint,
+		token,
+	)
+
+	if tags != "" {
+		url = fmt.Sprintf(
+			"%s/tag/%s/",
+			url,
+			tags,
+		)
+	}
+	return url
 }

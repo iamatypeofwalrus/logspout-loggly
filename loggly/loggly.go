@@ -36,14 +36,17 @@ func init() {
 // the LOGGLY_TOKEN environment variable
 func NewLogglyAdapter(route *router.Route) (router.LogAdapter, error) {
 	token := os.Getenv(logglyTokenEnvVar)
+	tags := os.Getenv(logglyTagsEnvVar)
 
 	if token == "" {
-		return nil, errors.New("could not find environment variable LOGGLY_TOKEN")
+		return nil, errors.New(
+			"could not find environment variable LOGGLY_TOKEN",
+		)
 	}
 
 	return adapter.New(
 		token,
-		os.Getenv(logglyTagsEnvVar),
+		tags,
 		100,
 	), nil
 }

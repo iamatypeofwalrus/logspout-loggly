@@ -107,7 +107,10 @@ func (l *Adapter) flushBuffer(buffer []logglyMessage) {
 
 func (l *Adapter) sendRequestToLoggly(req *http.Request) {
 	resp, err := http.DefaultClient.Do(req)
-	defer resp.Body.Close()
+
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	if err != nil {
 		l.log.Println(
